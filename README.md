@@ -2,7 +2,7 @@
 
 On screen overlay display for key-press actions to use on presentations (for Turkish keyboards). Uses [keyboard](https://github.com/boppreh/keyboard) library, works only on windows.
 
-![screenshot](/docs/screenshot.png "screenshot")
+![screenshot](/doc/screenshot.png "screenshot")
 
 Installation & Usage
 --------------------

@@ -1,9 +1,9 @@
 #
-# pip install pyqt5 keyboard
+# pip install pyqt5 keyboard mouse
 #
 
 import sys
-from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtCore import pyqtSlot, pyqtProperty
 from PyQt5.QtGui import *
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import *
@@ -11,18 +11,56 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import *
 from PyQt5.QtCore import QPropertyAnimation, QPoint
 import keyboard
+import mouse
+from numpy import isin
 
 
-class MyNotification(QMainWindow):
+class MouseOverlay(QMainWindow):
+
+    def __init__(self):
+        QMainWindow.__init__(self)
+        self.radius = 50
+        # < Styles >
+        self.background_style_css = f"background-color: rgba(255, 255, 50, 255); border-radius: {self.radius}px;"
+        self.setFixedSize(self.radius * 2, self.radius * 2)
+        self.move(100, 100)
+        self.setWindowFlags(Qt.SplashScreen | Qt.WindowStaysOnTopHint | QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowTransparentForInput)
+        self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+        self.main_back = QLabel(self)
+        self.main_back.resize(self.radius * 2, self.radius * 2)
+        self.main_back.setStyleSheet(self.background_style_css)
+        self.setWindowOpacity(0.25)
+
+        self.animation = QPropertyAnimation(self, b'opacity', self)
+
+    # Opacity Property =======
+    def windowOpacity(self):
+        return super().windowOpacity()
+
+    def setWindowOpacity(self, opacity):
+        super().setWindowOpacity(opacity)
+
+    opacity = pyqtProperty(float, windowOpacity, setWindowOpacity)
+
+    def pulse(self):
+        self.animation.stop()
+        self.animation.setDuration(400)
+        self.animation.setLoopCount(1)
+        self.animation.setStartValue(0.8)
+        self.animation.setEndValue(0.25)
+        self.animation.start(QPropertyAnimation.KeepWhenStopped)
+
+
+class KeyboardOverlay(QMainWindow):
 
     external_key_event = pyqtSignal(object)
+    external_mouse_event = pyqtSignal(object)
 
     def __init__(self, app):
 
         QMainWindow.__init__(self)
 
-        # Params...
-        self.app = app
+        # Find screen size
         screen = app.primaryScreen()
         screen_size = screen.size()
         self.sw, self.sh = screen_size.width(), screen_size.height()
@@ -31,13 +69,6 @@ class MyNotification(QMainWindow):
 
         # < Styles >
         self.background_style_css = "background-color: rgba(0, 0, 0, 150); border-radius: 16px;"
-        self.close_button_style_css = """
-                                        QPushButton{
-                                                    background-color: none;
-                                                    color: white; border-radius: 6px;
-                                                    font-size: 18px;
-                                                    }
-                                    """
         # </ Styles >
 
         # < Global Settings >
@@ -68,23 +99,40 @@ class MyNotification(QMainWindow):
         self.text_label.setGraphicsEffect(shadow)
 
         # < Header Style >
-        self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+        self.setWindowFlags(Qt.SplashScreen | Qt.WindowStaysOnTopHint | QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowTransparentForInput)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
-
-        # This Line Set Your Window Always on To
-        self.setWindowFlags(Qt.SplashScreen | Qt.WindowStaysOnTopHint)
         # </ Header Style >
 
         # Keyboard Hook
-        self.hook = keyboard.on_press(self.keyboard_on_press_handler)
+        self.keyboard_hook = keyboard.on_press(self.keyboard_on_press_handler)
         self.external_key_event.connect(self.keyboardEventReceived)
+        self.mouse_hook = mouse.hook(self.mouse_event_handler)
+        self.external_mouse_event.connect(self.mouseEventReceived)
 
         # Initial animation
         self.animation = QPropertyAnimation(self, b'opacity', self)
         self.pulse()
 
+        self.mc = MouseOverlay()
+        self.mc.show()
+
+
+    # Keyboard handler
     def keyboard_on_press_handler(self, event):
         self.external_key_event.emit(event)
+
+    # Mouse handler
+    def mouse_event_handler(self, event):
+        self.external_mouse_event.emit(event)
+
+    @pyqtSlot(object)
+    def mouseEventReceived(self, event):
+        # print(event)
+        if isinstance(event, mouse.MoveEvent):
+            self.mc.move(event.x - self.mc.radius, event.y - self.mc.radius)
+        if isinstance(event, mouse.ButtonEvent) and event.event_type != 'up':
+            self.mc.pulse()
+
 
     @pyqtSlot(object)
     def keyboardEventReceived(self, event):
@@ -140,15 +188,11 @@ class MyNotification(QMainWindow):
 
     opacity = pyqtProperty(float, windowOpacity, setWindowOpacity)
 
-    def close_window(self):
-        print("zzzz")
-        self.close()
-        sys.exit()
 
 
 if __name__ == '__main__':
 
     app = QApplication(sys.argv)
-    MainWindow = MyNotification(app)
+    MainWindow = KeyboardOverlay(app)
     MainWindow.show()
     sys.exit(app.exec_())
