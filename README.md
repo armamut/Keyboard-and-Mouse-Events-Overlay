@@ -1,6 +1,6 @@
-# on-screen-key-press
+# On Screen Key Press Display with PyQT5 and keyboard
 
-On screen overlay display for key-press actions to use on presentations (for Turkish keyboards). Uses [keyboard](https://github.com/boppreh/keyboard) library, works only on windows.
+On screen overlay display for key-press actions to use on presentations (for Turkish keyboards). Uses PyQT5 and [keyboard](https://github.com/boppreh/keyboard) library, works only on windows.
 
 ![screenshot](/doc/screenshot.png "screenshot")
 
