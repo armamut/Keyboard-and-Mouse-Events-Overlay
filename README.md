@@ -11,7 +11,7 @@ Clone this repo, install necessary libraries.
 
 ```bash
 
-pip install pyqt5 keyboard
+pip install pyqt5 keyboard mouse
 
 ```
 
